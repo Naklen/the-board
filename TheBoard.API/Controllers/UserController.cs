@@ -25,13 +25,13 @@ public class UserController(UserService userService, TokenService tokenService) 
 
     [HttpPost("login")]
     [AllowAnonymousOnly]
-    public async Task<IActionResult> Login([FromBody] LoginUserRequest credintials)
+    public async Task<ActionResult<AccessTokenDataResponse>> Login([FromBody] LoginUserRequest credintials)
     {
         var tokenPair = await _userService.Login(credintials.Email, credintials.Password);
 
-        SetAccessAndRefreshTokensToCookie(tokenPair);
+        var accessData = SetAccessAndRefreshTokensToCookie(tokenPair);
 
-        return Ok();
+        return new AccessTokenDataResponse(accessData);
     }
 
     [HttpGet("{id}")]
@@ -46,34 +46,33 @@ public class UserController(UserService userService, TokenService tokenService) 
     [Authorize]
     public async Task<ActionResult<GetUserResponse>> GetUserSelf()
     {
-        HttpContext.Request.Cookies.TryGetValue(GetEnvironmentVariable("JWT_ACCESS_COOKIE_NAME"), out var token);
+        HttpContext.Request.Headers.TryGetValue(GetEnvironmentVariable("JWT_ACCESS_HEADER_NAME"), out var token);
         var userId = Guid.Parse(_tokenService.GetTokenPayload(token).First(f => f.Key == "UserId").Value);
         return await GetUser(userId);
     }
 
     [HttpGet("refresh")]
-    public async Task<ActionResult<string>> Refresh()
+    public async Task<ActionResult<AccessTokenDataResponse>> Refresh()
     {
         if (!HttpContext.Request.Cookies.TryGetValue(GetEnvironmentVariable("JWT_REFRESH_COOKIE_NAME"), out var token))
             return Unauthorized();
         try
         {
             var tokenPair = await _userService.Refresh(token);
-            SetAccessAndRefreshTokensToCookie(tokenPair);
+            var accessData = SetAccessAndRefreshTokensToCookie(tokenPair);
+            return new AccessTokenDataResponse(accessData);
         }
         catch (ArgumentException ex)
         {
             return Unauthorized();
         }
-
-        return Ok();
     }
 
     [HttpGet("logout")]
     [Authorize]
     public async Task<ActionResult<string>> Logout()
     {
-        if (HttpContext.Request.Cookies.TryGetValue(GetEnvironmentVariable("JWT_ACCESS_COOKIE_NAME"), out var token))
+        if (HttpContext.Request.Headers.TryGetValue(GetEnvironmentVariable("JWT_ACCESS_HEADER_NAME"), out var token))
         {
             await _userService.Logout(token);
             KillAccessAndrefreshCookies();
@@ -81,11 +80,12 @@ public class UserController(UserService userService, TokenService tokenService) 
         return Ok();
     }
 
-    private void SetAccessAndRefreshTokensToCookie(TokenPair tokenPair)
+    private string SetAccessAndRefreshTokensToCookie(TokenPair tokenPair)
     {
+        var accessTokenSplitRes = tokenPair.AccessToken.Split('.');
         HttpContext.Response.Cookies.Append(
             GetEnvironmentVariable("JWT_ACCESS_COOKIE_NAME"),
-            tokenPair.AccessToken,
+            accessTokenSplitRes[2],
             new CookieOptions()
             {
                 HttpOnly = true,
@@ -105,6 +105,7 @@ public class UserController(UserService userService, TokenService tokenService) 
                 Path = "/api/user/refresh",
                 Expires = DateTime.UtcNow.AddDays(double.Parse(GetEnvironmentVariable("JWT_REFRESH_LIFETIME_DAYS")))
             });
+        return accessTokenSplitRes[0] + '.' + accessTokenSplitRes[1];
     }
 
     private void KillAccessAndrefreshCookies()

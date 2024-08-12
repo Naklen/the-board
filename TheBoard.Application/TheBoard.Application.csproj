@@ -14,4 +14,8 @@
     <ProjectReference Include="..\TheBoard.Core\TheBoard.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+  	<Using Static="true" Include="System.Environment" />
+  </ItemGroup>
+
 </Project>

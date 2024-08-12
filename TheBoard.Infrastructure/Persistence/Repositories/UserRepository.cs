@@ -30,7 +30,7 @@ public class UserRepository : IUserRepository
     {
         var result = await _context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email) ?? throw new ArgumentException("No user with this email");
+            .FirstOrDefaultAsync(u => u.Email == email);
         return result;
     }
 
@@ -38,7 +38,7 @@ public class UserRepository : IUserRepository
     {
         var result = await _context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == id) ?? throw new ArgumentException("No user with this Id");
+            .FirstOrDefaultAsync(u => u.Id == id);
         return result;
     }
 

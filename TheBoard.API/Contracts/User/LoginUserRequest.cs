@@ -2,7 +2,6 @@
 
 namespace TheBoard.API.Contracts.User;
 
-public record RegistrateUserRequest(
-    [Required] string Username,
+public record LoginUserRequest(
     [Required] string Email,
     [Required] string Password);

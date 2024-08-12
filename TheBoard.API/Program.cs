@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Antiforgery;
 using TheBoard.API;
 using TheBoard.API.Middlewares;
 using TheBoard.Application;
@@ -27,6 +28,7 @@ services
     .AddInfrastructure(builder.Configuration);
 
 services.AddJwtAuthentication();
+services.AddAntiforgery(options => { options.HeaderName = "x-xsrf-token"; });
 
 var app = builder.Build();
 
@@ -38,19 +40,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-//app.Use(async (context, next) =>
-//{
-//    var token = context.Request.Cookies[GetEnvironmentVariable("JWT_ACCESS_COOKIE_NAME")];
-//    if (!string.IsNullOrEmpty(token))
-//        context.Request.Headers.Add("Authorization", "Bearer " + token);
-
-//    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-//    context.Response.Headers.Add("X-Xss-Protection", "1");
-//    context.Response.Headers.Add("X-Frame-Options", "DENY");
-
-//    await next();
-//});
 
 app.UseAccessToken();
 

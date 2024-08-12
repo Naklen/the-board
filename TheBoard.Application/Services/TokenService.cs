@@ -28,7 +28,7 @@ public class TokenService(IJwtProvider jwtProvider, IUserRepository userReposito
     public string GenerateRefreshTokens(User user, Guid sessionId, Guid tokenId)
     {
         var refreshSecret = GetEnvironmentVariable("JWT_REFRESH_SECRET");
-        var refreshExpires = DateTime.UtcNow.AddMinutes(double.Parse(GetEnvironmentVariable("JWT_REFRESH_LIFETIME_DAYS")));
+        var refreshExpires = DateTime.UtcNow.AddDays(double.Parse(GetEnvironmentVariable("JWT_REFRESH_LIFETIME_DAYS")));
         var refreshToken = _jwtProvider.GenerateToken(
             [
                 new ("UserId", user.Id.ToString()),

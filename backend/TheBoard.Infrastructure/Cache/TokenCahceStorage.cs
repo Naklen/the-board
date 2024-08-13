@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using StackExchange.Redis;
+﻿using StackExchange.Redis;
 using TheBoard.Application.Interfaces;
 
 namespace TheBoard.Infrastructure.Cache;
@@ -16,8 +15,8 @@ public class TokenCahceStorage(IConnectionMultiplexer connection) : ITokenCacheS
         var db = _connection.GetDatabase();
         var sessionsKeys = server.KeysAsync(pattern: $"{userId}:*");
 
-        await foreach (var key in sessionsKeys)        
-            await db.KeyDeleteAsync(key);        
+        await foreach (var key in sessionsKeys)
+            await db.KeyDeleteAsync(key);
     }
 
     public async Task DeleteBySessionId(Guid sessionId, Guid userId)
@@ -33,9 +32,9 @@ public class TokenCahceStorage(IConnectionMultiplexer connection) : ITokenCacheS
         var sessionsKeys = server.KeysAsync(pattern: $"{userId}:*");
         var result = new List<string>();
 
-        await foreach (var key in sessionsKeys)        
+        await foreach (var key in sessionsKeys)
             result.Add(await db.StringGetAsync(key));
-        
+
         return result;
     }
 

@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Nodes;
-using TheBoard.Application.Auth;
+﻿using TheBoard.Application.Auth;
 using TheBoard.Application.Contracts;
 using TheBoard.Application.Stores;
 using TheBoard.Core.Models;
@@ -63,7 +62,7 @@ public class TokenService(IJwtProvider jwtProvider, IUserRepository userReposito
         var newRefreshToken = GenerateRefreshTokens(user, sessionId, Guid.NewGuid());
 
         return new TokenPair(newAccessToken, newRefreshToken);
-    }    
+    }
 
     public IEnumerable<TokenPayloadField> GetTokenPayload(string token)
     {

@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Antiforgery;
 using TheBoard.API;
 using TheBoard.API.Middlewares;
 using TheBoard.Application;

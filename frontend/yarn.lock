@@ -78,6 +78,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ant-design/nextjs-registry@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "@ant-design/nextjs-registry@npm:1.0.1"
+  peerDependencies:
+    "@ant-design/cssinjs": ^1.18.2
+    antd: ^5.0.0
+    next: ^14.0.0
+    react: ">=16.0.0"
+    react-dom: ">=16.0.0"
+  checksum: 10c0/92d407b9872251159ee50fb4973cb1d94f057f3001b1c287f4616bacd294e91a9456c63540dc9cf28e677643d7a9dd9af9d4cc7899c502249a3ed108ac5ffaa9
+  languageName: node
+  linkType: hard
+
 "@ant-design/react-slick@npm:~1.1.2":
   version: 1.1.2
   resolution: "@ant-design/react-slick@npm:1.1.2"
@@ -1725,6 +1738,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "frontend@workspace:."
   dependencies:
+    "@ant-design/icons": "npm:^5.4.0"
+    "@ant-design/nextjs-registry": "npm:^1.0.1"
     "@types/node": "npm:^20"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"

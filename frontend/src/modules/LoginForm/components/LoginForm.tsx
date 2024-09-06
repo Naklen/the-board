@@ -2,19 +2,16 @@
 import AuthForm from "@/components/AuthForm/AuthForm";
 import { Button, Form } from "antd";
 import Link from "next/link";
-import React from "react";
+import { handleLogin } from "../handlers/handleLogin";
 import EmailInput from "./EmailInput";
 import PasswordInput from "./PasswordInput";
-export function LoginForm() {
-    const onFinish = async (values: any) => {
-        console.log("Received values of form: ", values);
-    };
 
+export function LoginForm() {
     return (
-        <AuthForm onFinish={onFinish}>
+        <AuthForm onFinish={handleLogin}>
             <h1>Log in</h1>
-            <EmailInput/>
-            <PasswordInput/>
+            <EmailInput />
+            <PasswordInput />
             <Form.Item>
                 <Button block type="primary" htmlType="submit">
                     Log in

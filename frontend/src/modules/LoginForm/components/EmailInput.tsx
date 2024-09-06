@@ -1,6 +1,5 @@
 import { Form, Input } from "antd";
 import { Rule } from "antd/es/form";
-import React from "react";
 
 export default function EmailInput() {
     const emailRules: Rule[] = [

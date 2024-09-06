@@ -17,6 +17,17 @@ services.Configure<RouteOptions>(options =>
         options.LowercaseQueryStrings = true;
     });
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(GetEnvironmentVariable("FRONTEND_URL"));
+        policy.AllowAnyHeader();
+        policy.AllowAnyMethod();
+        policy.AllowCredentials();
+    });
+});
+
 services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 services.AddEndpointsApiExplorer();
@@ -27,7 +38,6 @@ services
     .AddInfrastructure(builder.Configuration);
 
 services.AddJwtAuthentication();
-services.AddAntiforgery(options => { options.HeaderName = "x-xsrf-token"; });
 
 var app = builder.Build();
 
@@ -39,6 +49,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors();
 
 app.UseAccessToken();
 

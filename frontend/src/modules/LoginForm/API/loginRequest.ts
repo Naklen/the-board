@@ -3,7 +3,7 @@ type ResponseBodyType = {
 };
 
 export async function loginRequest(
-    login: string,
+    email: string,
     password: string
 ): Promise<ResponseBodyType> {
     const response = await fetch(
@@ -13,7 +13,7 @@ export async function loginRequest(
             headers: {
                 "Content-Type": "application/json;charset=utf-8",
             },
-            body: JSON.stringify({ login, password }),
+            body: JSON.stringify({ email, password }),
             credentials: "include",
         }
     );

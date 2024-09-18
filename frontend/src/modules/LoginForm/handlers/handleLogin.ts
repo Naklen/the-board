@@ -1,11 +1,11 @@
 import { loginRequest } from '../API/loginRequest'
 
 type HandleLoginType = {
-    login: string,
+    email: string,
     password: string
 }
 
 export async function handleLogin(credentials: HandleLoginType) {
-    const accessTokenData = await loginRequest(credentials.login, credentials.password)
+    const accessTokenData = await loginRequest(credentials.email, credentials.password)
     localStorage.setItem('accessTokenData', accessTokenData.value)
 }

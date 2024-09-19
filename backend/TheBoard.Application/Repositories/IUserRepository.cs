@@ -7,6 +7,7 @@ public interface IUserRepository
     Task Add(User user);
     Task Update(Guid id, string email, string passwordHash, string username);
     Task Delete(Guid id);
-    Task<User> GetById(Guid id);
-    Task<User> GetByEmail(string email);
+    Task<User?> GetById(Guid id);
+    Task<User?> GetByEmail(string email);
+    Task<User?> GetByUsername(string username);
 }

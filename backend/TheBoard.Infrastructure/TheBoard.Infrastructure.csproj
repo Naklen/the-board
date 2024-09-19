@@ -27,6 +27,7 @@
 
   <ItemGroup>
   	<Using Static="true" Include="System.Environment" />
+	<Using Include="FluentResults"/>
   </ItemGroup>
 
 </Project>

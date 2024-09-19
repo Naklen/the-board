@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using FluentResults;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TheBoard.API.Contracts.Errors;
 using TheBoard.API.Contracts.User;
 using TheBoard.API.Features;
 using TheBoard.Application.Contracts;
+using TheBoard.Application.Errors;
 using TheBoard.Application.Services;
 
 namespace TheBoard.API.Controllers;
@@ -18,18 +21,24 @@ public class UserController(UserService userService, TokenService tokenService) 
     [AllowAnonymousOnly]
     public async Task<ActionResult<GetUserResponse>> Registrate([FromBody] RegistrateUserRequest user)
     {
-        var id = await _userService.Registrate(user.Username, user.Email, user.Password);
+        var registrateResult = await _userService.Registrate(user.Username, user.Email, user.Password);
 
-        return CreatedAtAction(nameof(GetUser), new { id }, new GetUserResponse(id, user.Email, user.Username));
+        if (registrateResult.IsFailed)
+            return BadRequest(new ResponseErrors(registrateResult.Errors));
+
+        return CreatedAtAction(nameof(GetUser), new { registrateResult.Value }, new GetUserResponse(registrateResult.Value, user.Email, user.Username));
     }
 
     [HttpPost("login")]
     [AllowAnonymousOnly]
     public async Task<ActionResult<AccessTokenDataResponse>> Login([FromBody] LoginUserRequest credintials)
     {
-        var tokenPair = await _userService.Login(credintials.Email, credintials.Password);
+        var loginResult = await _userService.Login(credintials.Email, credintials.Password);
 
-        var accessData = SetAccessAndRefreshTokensToCookie(tokenPair);
+        if (loginResult.IsFailed)
+            return Unauthorized(new ResponseErrors(loginResult.Errors));
+
+        var accessData = SetAccessAndRefreshTokensToCookie(loginResult.Value);
 
         return new AccessTokenDataResponse(accessData);
     }
@@ -38,7 +47,9 @@ public class UserController(UserService userService, TokenService tokenService) 
     [Authorize]
     public async Task<ActionResult<GetUserResponse>> GetUser(Guid id)
     {
-        var user = await _userService.GetById(id);
+        var (isSuccess, isFailed, user, errors) = await _userService.GetById(id);
+        if (isFailed)
+            return NotFound(new ResponseErrors(errors));
         return new GetUserResponse(id, user.Email, user.Username);
     }
 
@@ -56,16 +67,18 @@ public class UserController(UserService userService, TokenService tokenService) 
     {
         if (!HttpContext.Request.Cookies.TryGetValue(GetEnvironmentVariable("JWT_REFRESH_COOKIE_NAME"), out var token))
             return Unauthorized();
-        try
+
+        var refreshResult = await _userService.Refresh(token);
+        if (refreshResult.IsFailed)
         {
-            var tokenPair = await _userService.Refresh(token);
-            var accessData = SetAccessAndRefreshTokensToCookie(tokenPair);
-            return new AccessTokenDataResponse(accessData);
-        }
-        catch (ArgumentException ex)
-        {
+            if (refreshResult.HasError(e => e.HasMetadata("code", m => (ErrorType)m == ErrorType.NotFound)))
+                KillAccessAndrefreshCookies();
             return Unauthorized();
         }
+
+        var tokenPair = refreshResult.Value;
+        var accessData = SetAccessAndRefreshTokensToCookie(tokenPair);
+        return new AccessTokenDataResponse(accessData);
     }
 
     [HttpGet("logout")]

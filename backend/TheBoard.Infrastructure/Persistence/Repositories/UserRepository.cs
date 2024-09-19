@@ -26,15 +26,22 @@ public class UserRepository : IUserRepository
             .ExecuteDeleteAsync();
     }
 
-    public async Task<User> GetByEmail(string email)
+    public async Task<User?> GetByEmail(string email)
     {
         var result = await _context.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email == email);
         return result;
     }
+    public async Task<User?> GetByUsername(string username)
+    {
+        var result = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Username == username);
+        return result;
+    }
 
-    public async Task<User> GetById(Guid id)
+    public async Task<User?> GetById(Guid id)
     {
         var result = await _context.Users
             .AsNoTracking()

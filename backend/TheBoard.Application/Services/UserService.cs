@@ -1,5 +1,6 @@
 ﻿using TheBoard.Application.Auth;
 using TheBoard.Application.Contracts;
+using TheBoard.Application.Errors;
 using TheBoard.Application.Interfaces;
 using TheBoard.Application.Stores;
 using TheBoard.Core.Models;
@@ -17,13 +18,23 @@ public class UserService(
     private readonly TokenService _tokenService = tokenService;
     private readonly ITokenCacheStorage _tokenCacheStorage = tokenCacheStorage;
 
-    public async Task<Guid> Registrate(string userName, string email, string password)
+    public async Task<Result<Guid>> Registrate(string username, string email, string password)
     {
+        var emailIsExistResult = Result.FailIf(
+            await _userRepository.GetByEmail(email) != null,
+            UserError.RegistrationWithExistedEmail(email));
+
+        var usernameIsExistResult = Result.FailIf(
+            await _userRepository.GetByUsername(username) != null,
+            UserError.RegistrationWithExistedUsername(username));
+
+        if (emailIsExistResult.IsFailed || usernameIsExistResult.IsFailed)
+            return Result.Merge(emailIsExistResult, usernameIsExistResult);
         var passwordHash = _passwordHasher.Hash(password);
         var user = new User()
         {
             Id = Guid.NewGuid(),
-            Username = userName,
+            Username = username,
             Email = email,
             PasswordHash = passwordHash
         };
@@ -32,27 +43,33 @@ public class UserService(
         return user.Id;
     }
 
-    public async Task<TokenPair> Login(string email, string password)
+    public async Task<Result<TokenPair>> Login(string email, string password)
     {
-        var user = await _userRepository.GetByEmail(email) ?? throw new ArgumentException("No user with this email");
+        var user = await _userRepository.GetByEmail(email);
+
+        if (user is null)
+            return Result.Fail(AuthError.LoginToNotExistedUser("email", email));
 
         if (!_passwordHasher.Verify(password, user.PasswordHash))
-            throw new ArgumentException("Wrong password");
+            return Result.Fail(AuthError.WrongPassword());
 
         var newPair = _tokenService.GenerateNewTokens(user, out Guid newSessionId);
 
         var sessions = await _tokenCacheStorage.GetSessionsByUserId(user.Id);
         if (sessions.Count() >= int.Parse(GetEnvironmentVariable("MAX_USER_SESSIONS_COUNT")))
-            _tokenCacheStorage.DeleteAllUserSessions(user.Id);
+            await _tokenCacheStorage.DeleteAllUserSessions(user.Id);
 
-        _tokenCacheStorage.SetTokenBySessionId(newPair.RefreshToken, newSessionId, user.Id);
+        await _tokenCacheStorage.SetTokenBySessionId(newPair.RefreshToken, newSessionId, user.Id);
 
         return newPair;
     }
 
-    public async Task<TokenPair> Refresh(string refreshToken)
+    public async Task<Result<TokenPair>> Refresh(string refreshToken)
     {
-        var newPair = await _tokenService.RefreshTokens(refreshToken);
+        var refreshResult = await _tokenService.RefreshTokens(refreshToken);
+        if (refreshResult.IsFailed)
+            return refreshResult;
+        var newPair = refreshResult.Value;
 
         var refreshPayload = _tokenService.GetTokenPayload(newPair.RefreshToken);
         var sessionId = Guid.Parse(refreshPayload.First(f => f.Key == "SessionId").Value);
@@ -60,14 +77,14 @@ public class UserService(
 
         var currentRefreshToken = await _tokenCacheStorage.GetTokenBySessionId(sessionId, userId);
         if (currentRefreshToken is null)
-            throw new ArgumentException("Session is not exist");
+            return AuthError.SessionIsNotExist();
         if (currentRefreshToken != refreshToken)
         {
-            _tokenCacheStorage.DeleteBySessionId(sessionId, userId);
-            throw new ArgumentException("Invalid token");
-        }        
-        
-        _tokenCacheStorage.SetTokenBySessionId(
+            await _tokenCacheStorage.DeleteBySessionId(sessionId, userId);
+            return AuthError.InvalidRefreshToken();
+        }
+
+        await _tokenCacheStorage.SetTokenBySessionId(
             newPair.RefreshToken,
             sessionId,
             userId);
@@ -84,8 +101,10 @@ public class UserService(
         await _tokenCacheStorage.DeleteBySessionId(sessionId, userId);
     }
 
-    public async Task<User> GetById(Guid id)
+    public async Task<Result<User>> GetById(Guid id)
     {
-        return await _userRepository.GetById(id);
+        var user = await _userRepository.GetById(id);
+        var result = Result.FailIf(user is null, UserError.IsNotExist);
+        return result;
     }
 }

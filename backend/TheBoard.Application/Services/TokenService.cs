@@ -1,5 +1,6 @@
 ﻿using TheBoard.Application.Auth;
 using TheBoard.Application.Contracts;
+using TheBoard.Application.Errors;
 using TheBoard.Application.Stores;
 using TheBoard.Core.Models;
 
@@ -49,14 +50,16 @@ public class TokenService(IJwtProvider jwtProvider, IUserRepository userReposito
         return new TokenPair(accessToken, refreshToken);
     }
 
-    public async Task<TokenPair> RefreshTokens(string refreshTokenString)
+    public async Task<Result<TokenPair>> RefreshTokens(string refreshTokenString)
     {
         if (!_jwtProvider.VerifyToken(refreshTokenString, GetEnvironmentVariable("JWT_REFRESH_SECRET"), out var verifiedPayload))
-            throw new ArgumentException("token verification error");
+            return AuthError.InvalidRefreshToken();
 
         var userId = Guid.Parse(verifiedPayload.FirstOrDefault(f => f.Key == "UserId").Value);
         var sessionId = Guid.Parse(verifiedPayload.FirstOrDefault(f => f.Key == "SessionId").Value);
         var user = await _userRepository.GetById(userId);
+        if (user is null)
+            return UserError.IsNotExist();
 
         var newAccessToken = GenerateAccessToken(user, sessionId);
         var newRefreshToken = GenerateRefreshTokens(user, sessionId, Guid.NewGuid());
